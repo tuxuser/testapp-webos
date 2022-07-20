@@ -19,8 +19,6 @@
         "lib/**",
         "node_modules/**",
         "dist/**",
-        "hyperhdr/**",
-        "hyperhdr-repo/**",
         "service/**",
         "tools/**"
     ],

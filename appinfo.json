@@ -1,8 +1,8 @@
 {
-  "id": "org.webosbrew.hyperhdr.loader",
-  "version": "0.1.4",
+  "id": "org.webosbrew.testapp",
+  "version": "0.0.1",
   "vendor": "webosbrew.org",
-  "title": "HyperHDR",
+  "title": "Testapp",
   "icon": "assets/logo_small.png",
   "largeIcon": "assets/logo_big.png",
   "splashBackground": "assets/splash_1080p.png",
@@ -11,5 +11,5 @@
   "iconColor": "black",
   "type": "web",
   "supportGIP": true,
-  "appDescription": "HyperHDR for WebOS"
+  "appDescription": "Testapp with native service"
 }

@@ -11,123 +11,12 @@ env:
   TOOLCHAIN_FILE: /opt/arm-webos-linux-gnueabi_sdk-buildroot/share/buildroot/toolchainfile.cmake
   BUILD_DIR: build
 
-  CCACHE_CACHE_DIR: .ccache-build
-  CCACHE_COMPRESS: true
-  CCACHE_COMPRESSLEVEL: 6
-  CCACHE_MAXSIZE: 600M
-
 jobs:
-  build_hyperhdr:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./hyperhdr-repo
-
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          repository: awawa-dev/HyperHDR
-          ref: master
-          path: hyperhdr-repo
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Restore/Cache build directories
-        uses: actions/cache@v3
-        with:
-          path: |
-            ${{ github.workspace }}/${{ env.CCACHE_CACHE_DIR }}
-
-          key: ccache-${{ runner.os }}-${{github.run_id}}
-          restore-keys: |
-            ccache-${{ runner.os }}
-
-      - name: Create build directories
-        run: |
-          mkdir -p ./${{ env.BUILD_DIR }}
-
-      - name: Download and unpack toolchain
-        working-directory: /opt
-        run: |
-          wget -q -O toolchain.tar.gz ${TOOLCHAIN_URL}
-          tar xf toolchain.tar.gz
-
-      - name: Relocate toolchain
-        run: |
-          pushd ${TOOLCHAIN_DIR}
-          ./relocate-sdk.sh
-          popd
-
-      - name: Install native dependencies
-        env:
-          apt_deps: ccache git cmake build-essential flatbuffers-compiler
-        run: |
-          sudo apt update
-          sudo apt install -y ${{ env.apt_deps }}
-
-      - name: Build (webos arm)
-        env:
-          CCACHE_DIR: ${{ github.workspace }}/${{ env.CCACHE_CACHE_DIR }}
-        run: |
-          pushd ./${{ env.BUILD_DIR }}
-          cmake .. \
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DPLATFORM=linux \
-            -DENABLE_SPIDEV=OFF \
-            -DENABLE_V4L2=OFF \
-            -DENABLE_X11=OFF \
-            -DENABLE_PIPEWIRE=OFF \
-            -DENABLE_SOUNDCAPLINUX=OFF \
-            -DENABLE_CEC=OFF \
-            -DENABLE_PROTOBUF=OFF \
-            -DENABLE_FRAMEBUFFER=OFF
-          make
-          popd
-
-      - name: Copy built binaries to release/
-        run: |
-          mkdir ./release
-          cp -r ./${{ env.BUILD_DIR }}/bin/* ./release/
-          find ./release
-      
-      - name: Copy dependencies to release/
-        env:
-          dependency_libs: libpng16.so.16 libjpeg.so.8 libcrypto.so.1.1 libz.so.1 libssl.so.1.1 libQt5Sql.so.5.15.2 libpcre2-16.so.0 libQt5Gui.so.5 libQt5Network.so.5 libQt5Widgets.so.5 libk5crypto.so.3 libatomic.so.1 libQt5Core.so.5 libkrb5support.so.0 libcom_err.so.3 libstdc++.so.6 libkrb5.so.3 libQt5Sql.so.5 libgssapi_krb5.so.2 libQt5SerialPort.so.5 libQt5Sql.so.5.15 libusb-1.0.so.0
-        run: |
-          for i in ${{ env.dependency_libs }}; do find ${TOOLCHAIN_DIR}/arm-webos-linux-gnueabi/sysroot/ -name $i -exec cp {} ./release/ \;; done
-          mkdir -p ./release/sqldrivers
-          mkdir -p ./release/imageformats
-          cp ${TOOLCHAIN_DIR}/arm-webos-linux-gnueabi/sysroot/usr/lib/qt/plugins/sqldrivers/libqsqlite.so ./release/sqldrivers/
-          cp ${TOOLCHAIN_DIR}/arm-webos-linux-gnueabi/sysroot/usr/lib/qt/plugins/imageformats/libqico.so ./release/imageformats/
-          cp ${TOOLCHAIN_DIR}/arm-webos-linux-gnueabi/sysroot/usr/lib/qt/plugins/imageformats/libqjpeg.so ./release/imageformats/
-          find ./release
-      
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: hyperhdr-build
-          path: ${{ github.workspace }}/hyperhdr-repo/release/*
-          if-no-files-found: error
-
   build_ipk:
     runs-on: ubuntu-latest
-    needs: build_hyperhdr
 
     steps:
       - uses: actions/checkout@v1
-        with:
-          submodules: recursive
-
-      - uses: actions/download-artifact@v3
-        with:
-          name: hyperhdr-build
-          path: hyperhdr-build
-
-      - name: Display structure of downloaded files
-        run: ls -R
 
       - name: Setup Node.js
         uses: actions/setup-node@v1
@@ -174,26 +63,9 @@ jobs:
           popd
           cp -r ./service/build/dist/* ./dist/service/
 
-      - name: Copy hyperhdr into dist/service/hyperhdr
-        run: |
-          ls -R
-          mkdir -p ./dist/service/hyperhdr
-          cp -r ./hyperhdr-build/* ./dist/service/hyperhdr/
-          ls -R
-
       - name: Ensure executables +x
         run: |
-          chmod +x ./dist/service/autostart.sh
-          chmod +x ./dist/service/loader_service
-          chmod +x ./dist/service/start_hyperhdr
-
-          chmod +x ./dist/service/hyperhdr/hyperhdr
-          chmod +x ./dist/service/hyperhdr/hyperhdr-remote
-          chmod +x ./dist/service/hyperhdr/flatc
-          chmod +x ./dist/service/hyperhdr/flathash
-
-      - name: Copy HDR LUT
-        run: unxz -dc ./resources/flat_lut_lin_tables.3d.xz > ./dist/service/hyperhdr/flat_lut_lin_tables.3d
+          chmod +x ./dist/service/testapp
 
       - run: npm run package
       - run: npm run gen-manifest
@@ -201,7 +73,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: hyperhdr-ipk
+          name: testapp-ipk
           path: |
             ${{github.workspace}}/*.ipk
 
@@ -214,7 +86,7 @@ jobs:
           title: "Development Build"
           files: |
             ${{github.workspace}}/*.ipk
-            ${{github.workspace}}/org.webosbrew.hyperhdr.loader.manifest.json
+            ${{github.workspace}}/org.webosbrew.testapp.manifest.json
 
       - uses: marvinpinto/action-automatic-releases@latest
         if: "startsWith(github.ref, 'refs/tags/v')"
@@ -224,4 +96,4 @@ jobs:
           title: ${{ github.ref_name }}
           files: |
             ${{github.workspace}}/*.ipk
-            ${{github.workspace}}/org.webosbrew.hyperhdr.loader.manifest.json
+            ${{github.workspace}}/org.webosbrew.testapp.manifest.json

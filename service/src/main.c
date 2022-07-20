@@ -1,24 +1,40 @@
 #include "service.h"
-#include "daemon.h"
 #include "log.h"
 
 GMainLoop *gmainLoop;
 
-void signal_handler(int signum)
+bool service_method_test(LSHandle* sh, LSMessage* msg, void* ctx)
 {
-    INFO("SIGNAL=%d detected, stopping...", signum);
-    g_main_loop_quit(gmainLoop);
+    LSError lserror;
+    LSErrorInit(&lserror);
+
+    INFO("Test endpoint called");
+
+    jvalue_ref jobj = jobject_create();
+    jobject_set(jobj, j_cstr_to_buffer("returnValue"), jboolean_create(true));
+
+    if(!LSMessageReply(sh, msg, jvalue_tostring_simple(jobj), &lserror))
+    {
+        ERR("Message reply error!!!");
+        LSErrorPrint(&lserror, stdout);
+
+        j_release(&jobj);
+        return false;
+    }
+
+    j_release(&jobj);
+    return true;
 }
+
+LSMethod methods[] = {
+    {"test", service_method_test, LUNA_METHOD_FLAGS_NONE },
+    { 0, 0, 0 }
+};
 
 int main()
 {
-    service_t service = {0};
     LSHandle *handle = NULL;
     LSError lserror;
-
-    service.daemon_pid = 0;
-    service.daemon_version = NULL;
-    service.power_paused = false;
 
     log_init(LOG_NAME);
     INFO("Starting up...");
@@ -26,20 +42,46 @@ int main()
     log_set_level(Debug);
     LSErrorInit(&lserror);
 
-    // Register exit signal handler
-    signal(SIGINT, signal_handler);
-    signal(SIGQUIT, signal_handler);
-    signal(SIGTERM, signal_handler);
-
     // create a GMainLoop
     gmainLoop = g_main_loop_new(NULL, FALSE);
 
-    bool ret = false;
+    bool register_success = false;
 
-    if ((ret = service_init(handle, gmainLoop, &service, &lserror)) && !ret ) {
-        ERR("Unable to init service: %s", lserror.message);
-        goto exit;
+    if (&LSRegisterPubPriv != 0) {
+        register_success = LSRegisterPubPriv(SERVICE_NAME, &handle, true, lserror);
+    } else {
+        register_success = LSRegister(SERVICE_NAME, &handle, lserror);
     }
+
+    if (!register_success)
+    {
+        ERR("Unable to register to luna-bus");
+        LSErrorPrint(&lserror, stdout);
+
+        return false;
+    }
+
+    INFO("Service registered")
+
+    if (!LSRegisterCategory(handle, "/", methods, NULL, NULL, &lserror))
+    {
+        ERR("Unable to register category and method");
+        LSErrorPrint(&lserror, stdout);
+
+        return false;
+    }
+
+    INFO("Category registered")
+
+    if(!LSGmainAttach(handle, gmainLoop, &lserror))
+    {
+        ERR("Unable to attach service");
+        LSErrorPrint(&lserror, stdout);
+
+        return false;
+    }
+
+    INFO("Service attached");
 
     DBG("Going into main loop..");
 
@@ -48,15 +90,19 @@ int main()
 
     DBG("Main loop quit...");
 
-exit:
-    if ((ret = service_destroy(handle, &service, &lserror)) && !ret) {
-        WARN("Destroying service properly failed: %s", lserror.message);
+    if(!LSUnregister(handle, &lserror))
+    {
+        ERR("Unable to unregister service");
+        LSErrorPrint(&lserror, stdout);
+
+        return false;
     }
 
     LSErrorFree(&lserror);
 
     // Decreases the reference count on a GMainLoop object by one
     g_main_loop_unref(gmainLoop);
+    gmainLoop = NULL;
 
     DBG("Service main finished");
     return 0;

@@ -1,10 +1,10 @@
 {
-  "id" : "org.webosbrew.hyperhdr.loader.service",
-  "description":"HyperHDR loader service",
+  "id" : "org.webosbrew.testapp.service",
+  "description":"Testapp service",
   "engine":"native",
-  "executable":"loader_service",
+  "executable":"testapp",
   "services": [ {
-    "name": "org.webosbrew.hyperhdr.loader.service",
-    "description": "HyperHDR loader service"
+    "name": "org.webosbrew.testapp.service",
+    "description": "Testapp service"
   }]
 }

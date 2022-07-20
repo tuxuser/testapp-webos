@@ -21,27 +21,8 @@ npm run build || exit 1
 echo ":: Service ::"
 npm run build-service || exit 1
 
-echo ":: HyperHDR ::"
-mkdir -p ${EXEC_DIR}/dist/service/hyperhdr
-cp -r ${EXEC_DIR}/hyperhdr/* ${EXEC_DIR}/dist/service/hyperhdr/ || exit 1
-
 echo ":: Ensure executable bit set ::"
-for file in autostart.sh loader_service start_hyperhdr
-do
-  FILE="${EXEC_DIR}/dist/service/${file}"
-  echo "=> ${FILE}"
-  chmod +x ${FILE}
-done
-
-for file in hyperhdr hyperhdr-remote flatc flathash
-do
-  FILE="${EXEC_DIR}/dist/service/hyperhdr/${file}"
-  echo "=> ${FILE}"
-  chmod +x ${FILE}
-done
-
-echo ":: Copy HDR LUT"
-unxz -dc ${EXEC_DIR}/resources/flat_lut_lin_tables.3d.xz > ${EXEC_DIR}/dist/service/hyperhdr/flat_lut_lin_tables.3d
+chmod +x ${EXEC_DIR}/dist/service/testapp
 
 echo ":: Package into IPK ::"
 npm run package || exit 1

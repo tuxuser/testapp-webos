@@ -48,12 +48,10 @@ include_directories(${PMLOG_INCLUDE_DIRS})
 
 # ---
 # create executable file
-set(BIN_NAME loader_service)
+set(BIN_NAME testapp)
 
 set(SRC_LIST
     ${CMAKE_SOURCE_DIR}/src/main.c
-    ${CMAKE_SOURCE_DIR}/src/service.c
-    ${CMAKE_SOURCE_DIR}/src/daemon.c
     ${CMAKE_SOURCE_DIR}/src/log.c
     ${CMAKE_SOURCE_DIR}/src/utils.c
 )
@@ -77,5 +75,3 @@ target_link_libraries (${BIN_NAME}
 target_compile_options(${BIN_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror -DSECURITY_COMPATIBILITY)
 
 file(COPY ${CMAKE_SOURCE_DIR}/services.json DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
-file(COPY ${CMAKE_SOURCE_DIR}/scripts/autostart.sh DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
-file(COPY ${CMAKE_SOURCE_DIR}/scripts/start_hyperhdr DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
