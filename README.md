@@ -1,5 +1,7 @@
 # Testapp for WebOS
 
+Test native service communication from frontend app
+
 ## Requirements
 
 * Linux host system
