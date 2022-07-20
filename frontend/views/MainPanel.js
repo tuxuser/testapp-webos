@@ -79,6 +79,7 @@ module.exports = kind({
     console.info(sender, evt);
 
     this.set('resultText', 'Test status received!');
+    this.set('testStatusText', 'Communication success');
     this.$.exec.send({command: "echo 'testapp.ui.status_result_received' > /tmp/testapp.on_status"});
   }
 });
