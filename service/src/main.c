@@ -1,9 +1,10 @@
+#include <pbnjson.h>
 #include "service.h"
 #include "log.h"
 
 GMainLoop *gmainLoop;
 
-bool service_method_test(LSHandle* sh, LSMessage* msg, void* ctx)
+bool service_method_test(LSHandle* sh, LSMessage* msg, void* ctx __attribute__((unused)))
 {
     LSError lserror;
     LSErrorInit(&lserror);
@@ -48,9 +49,11 @@ int main()
     bool register_success = false;
 
     if (&LSRegisterPubPriv != 0) {
-        register_success = LSRegisterPubPriv(SERVICE_NAME, &handle, true, lserror);
+        INFO("Calling LSRegisterPubPriv");
+        register_success = LSRegisterPubPriv(SERVICE_NAME, &handle, true, &lserror);
     } else {
-        register_success = LSRegister(SERVICE_NAME, &handle, lserror);
+        INFO("Calling LSRegister");
+        register_success = LSRegister(SERVICE_NAME, &handle, &lserror);
     }
 
     if (!register_success)
@@ -61,7 +64,7 @@ int main()
         return false;
     }
 
-    INFO("Service registered")
+    INFO("Service registered");
 
     if (!LSRegisterCategory(handle, "/", methods, NULL, NULL, &lserror))
     {
@@ -71,7 +74,7 @@ int main()
         return false;
     }
 
-    INFO("Category registered")
+    INFO("Category registered");
 
     if(!LSGmainAttach(handle, gmainLoop, &lserror))
     {

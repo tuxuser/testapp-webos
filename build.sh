@@ -13,6 +13,9 @@ echo "* Using toolchain dir: ${TOOLCHAIN_DIR}"
 echo "* Activating toolchain env"
 source ${TOOLCHAIN_ENV_FILE} || exit 1
 
+echo ":: Install deps ::"
+npm install || exit 1
+
 npm run clean || exit 1
 
 echo ":: Frontend ::"

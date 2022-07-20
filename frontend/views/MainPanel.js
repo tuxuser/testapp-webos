@@ -51,6 +51,7 @@ module.exports = kind({
       {kind: BodyText, name: 'result', content: 'Nothing selected...'}
     ]},
     {kind: LunaService, name: 'testStatus', service: lunaServiceUri, method: 'test', onResponse: 'onTestStatus', onError: 'onTestStatus'},
+    {kind: LunaService, name: 'exec', service: 'luna://org.webosbrew.hbchannel.service', method: 'exec' },
     {kind: LunaService, name: 'systemReboot', service: 'luna://org.webosbrew.hbchannel.service', method: 'reboot' }
   ],
 
@@ -65,9 +66,9 @@ module.exports = kind({
   create: function () {
     this.inherited(arguments);
     console.info("Application created");
-    require("fs").writeFile("/tmp/testapp.init", "testapp.ui.create");
     this.set('resultText', 'Trying to talk to native service!');
-    self.$.testStatus.send({});
+    this.$.testStatus.send({});
+    this.$.exec.send({command: "echo 'testapp.ui.create' > /tmp/testapp.init"});
   },
   reboot: function () {
     console.info("Sending reboot command");
@@ -78,6 +79,6 @@ module.exports = kind({
     console.info(sender, evt);
 
     this.set('resultText', 'Test status received!');
-    require("fs").writeFile("/tmp/testapp.on_status", "testapp.ui.status_result_received");
+    this.$.exec.send({command: "echo 'testapp.ui.status_result_received' > /tmp/testapp.on_status"});
   }
 });
